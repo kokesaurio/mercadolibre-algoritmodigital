@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { texto, tabla, kv, num, fecha, encabezado } from '../format.js';
+import { texto, tabla, kv, num, fecha, corto, encabezado } from '../format.js';
 
 export const sistema = [
   {
@@ -29,6 +29,80 @@ export const sistema = [
           { h: 'Desde', get: (r) => fecha(r.creado_en) },
         ]),
       ].join('\n'));
+    },
+  },
+  {
+    name: 'ml_conectar',
+    title: 'Conectar una tienda de MercadoLibre',
+    description: 'Genera el link de autorizacion para vincular una cuenta de MercadoLibre nueva, y muestra el estado de las que ya estan conectadas. Usar cuando el usuario dice "quiero conectar mi tienda", "agregar otra cuenta", "vincular MercadoLibre" o cuando alguna herramienta falla porque no hay cuentas. Devuelve un link que el usuario abre en el navegador: no autoriza nada por su cuenta.',
+    readOnly: true,
+    schema: {
+      diagnostico: z.boolean().optional().describe('true para revisar la configuracion en detalle cuando algo no funciona.'),
+    },
+    async run({ diagnostico }, { crm }) {
+      const [status, cuentas] = await Promise.all([
+        crm.ml('/status').catch(() => ({})),
+        crm.ml('/cuentas').catch(() => []),
+      ]);
+      const activas = (cuentas || []).filter((c) => c.activa);
+      const partes = [encabezado('Conectar MercadoLibre')];
+
+      if (activas.length) {
+        partes.push('Tiendas ya conectadas:', '');
+        partes.push(tabla(activas, [
+          { h: 'ID', get: (r) => r.id },
+          { h: 'Tienda', get: (r) => r.nombre },
+          { h: 'User ID ML', get: (r) => r.user_id },
+          { h: 'Desde', get: (r) => fecha(r.creado_en) },
+        ]));
+        partes.push('');
+      } else {
+        partes.push('Todavia no hay ninguna tienda conectada.', '');
+      }
+
+      if (!status.app_id_set || !status.secret_set) {
+        partes.push(
+          '⚠️ Falta configurar la aplicacion de MercadoLibre (App ID y Secret) en el panel,',
+          'en la seccion Conexion. Sin eso no se puede generar el link de autorizacion.'
+        );
+        return texto(partes.join('\n'));
+      }
+
+      try {
+        const { url } = await crm.ml('/connect');
+        partes.push(
+          '### Conectar una tienda nueva',
+          '',
+          '**[→ Autorizar MercadoLibre](' + url + ')**',
+          '',
+          'Abri ese link, inicia sesion con la cuenta que quieras vincular y aceptá los permisos.',
+          'Tiene que ser una cuenta **manager** o administradora de la tienda.',
+          'Al volver, la tienda ya aparece en `ml_cuentas` y suma al resumen consolidado.'
+        );
+      } catch (e) {
+        partes.push('⚠️ No se pudo generar el link: ' + e.message);
+      }
+
+      if (diagnostico) {
+        const d = await crm.ml('/diagnostico').catch(() => null);
+        if (d) {
+          partes.push('', '### Diagnostico (' + d.ok + '/' + d.total + ')', '');
+          partes.push(tabla(d.checks || [], [
+            { h: '', get: (c) => (c.ok ? '✅' : '❌') },
+            { h: 'Punto', get: (c) => c.titulo },
+            { h: 'Detalle', get: (c) => corto(c.detalle, 60) },
+            { h: 'Que hacer', get: (c) => corto(c.arreglo, 60) },
+          ]));
+        }
+      }
+
+      partes.push(
+        '',
+        '---',
+        '_Otros canales: este conector cubre MercadoLibre. WooCommerce esta integrado en el',
+        'panel pero todavia no expuesto por MCP; Tiendanube aun no tiene integracion._'
+      );
+      return texto(partes.join('\n'));
     },
   },
   {

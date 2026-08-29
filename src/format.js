@@ -19,7 +19,7 @@ export function fechaHora(d) {
   if (!d) return '-';
   const x = new Date(d);
   if (isNaN(x)) return String(d);
-  return x.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return x.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 export const corto = (s, n = 60) => {

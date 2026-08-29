@@ -1,7 +1,7 @@
 {
   "name": "@algoritmodigital/mcp-mercadolibre",
-  "version": "1.0.0",
-  "description": "Servidor MCP de MercadoLibre para Claude AI: consulta ventas, rentabilidad real, stock, publicaciones, preguntas, reclamos, Product Ads y precios de la competencia en lenguaje natural. 32 herramientas, stdio y HTTP con OAuth 2.1.",
+  "version": "1.1.0",
+  "description": "Servidor MCP de MercadoLibre para Claude AI: resumen consolidado de todas tus tiendas, ventas, rentabilidad real, stock, publicaciones, preguntas, reclamos, Product Ads y precios de la competencia en lenguaje natural. 33 herramientas, stdio y HTTP con OAuth 2.1.",
   "type": "module",
   "license": "MIT",
   "author": "Algoritmo Digital",
@@ -45,7 +45,9 @@
     "oauth2",
     "argentina",
     "latam",
-    "algoritmodigital"
+    "algoritmodigital",
+    "multicuenta",
+    "multitienda"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",

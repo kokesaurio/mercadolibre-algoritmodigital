@@ -3,12 +3,16 @@
 [![MCP](https://img.shields.io/badge/MCP-Model_Context_Protocol-000?style=flat-square)](https://modelcontextprotocol.io)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-3c873a?style=flat-square)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Herramientas](https://img.shields.io/badge/herramientas-32-ffe600?style=flat-square)](#todo-lo-que-hace)
+[![Herramientas](https://img.shields.io/badge/herramientas-33-ffe600?style=flat-square)](#todo-lo-que-hace)
 
 **Servidor MCP (Model Context Protocol) de MercadoLibre para Claude.** Conectá tu
 cuenta de MercadoLibre a Claude AI y consultá ventas, facturación, rentabilidad real,
 stock, publicaciones, preguntas de compradores, reclamos, reputación, Product Ads y
 precios de la competencia — todo en lenguaje natural, desde el chat.
+
+Es **multitienda de fábrica**: si tenés varias cuentas de MercadoLibre, el resumen
+del día y las métricas llegan sumadas, con el aporte de cada tienda al total. No hay
+que preguntar cuenta por cuenta.
 
 Compatible con **Claude Desktop**, **Claude Code** y cualquier cliente MCP. Funciona
 como conector local (stdio) o como conector remoto con OAuth 2.1. Pensado para
@@ -37,7 +41,7 @@ alguien cruce los datos por vos.
 
 - [Qué problema resuelve](#qué-problema-resuelve)
 - [Cómo funciona](#cómo-funciona)
-- [Todo lo que hace: las 32 herramientas](#todo-lo-que-hace)
+- [Todo lo que hace: las 33 herramientas](#todo-lo-que-hace)
   - [Cuenta y sincronización](#cuenta-y-sincronización)
   - [Ventas y plata](#ventas-y-plata)
   - [Publicaciones, precios y stock](#publicaciones-precios-y-stock)
@@ -99,7 +103,7 @@ del JSON.
 
 ## Todo lo que hace
 
-Las 32 herramientas MCP que este servidor le expone a Claude, agrupadas por lo que
+Las 33 herramientas MCP que este servidor le expone a Claude, agrupadas por lo que
 resuelven. Cada una es una consulta que podés hacer en lenguaje natural.
 
 ### Cuenta y sincronización
@@ -107,14 +111,15 @@ resuelven. Cada una es una consulta que podés hacer en lenguaje natural.
 | Herramienta | Qué devuelve |
 |---|---|
 | `ml_cuentas` | Cuentas de MercadoLibre vinculadas, con su ID interno, el user_id de ML, si están activas y desde cuándo. Además el estado de la conexión: si la app está configurada y cuántas cuentas responden. Es el primer paso cuando manejás más de una cuenta, porque devuelve el ID que el resto de las herramientas usa para filtrar. |
+| `ml_conectar` | Genera el link de autorización para vincular una tienda nueva y muestra las que ya están conectadas. Con `diagnostico: true` revisa la configuración punto por punto y te dice exactamente qué falta. No autoriza nada solo: devuelve el link para que lo abras vos. |
 | `ml_sincronizar` | Fuerza una sincronización de órdenes, publicaciones y preguntas contra la API oficial. El sistema ya sincroniza solo cada media hora; esto es para cuando necesitás el dato de hace dos minutos. |
 
 ### Ventas y plata
 
 | Herramienta | Qué devuelve |
 |---|---|
-| `ml_panel` | La foto del día completa en una sola llamada: ventas de hoy, facturación, preguntas sin responder, reclamos abiertos, publicaciones pausadas, stock crítico y alertas activas. Es por donde conviene empezar cuando la pregunta es general. |
-| `ml_metricas` | Los últimos 30 días: cantidad de ventas, facturado bruto, neto después de comisiones, ticket promedio, cuántas publicaciones tuvieron al menos una venta, el desglose por tipo de envío (Full, Flex, colecta, a acordar) y el top 12 de productos por facturación con unidades y si están en Full. |
+| `ml_panel` | **El resumen consolidado de todas tus tiendas.** Ventas, facturación y unidades del día sumando cada cuenta conectada, la comparación contra ayer a la misma hora, la tabla tienda por tienda con el aporte de cada una al total, la curva de ventas por hora y las últimas ventas mezcladas. Si le pasás una cuenta, muestra solo esa. Es por donde conviene empezar. |
+| `ml_metricas` | Los últimos 30 días **sumando todas las tiendas**, con el desglose de cuánto aportó cada una: cantidad de ventas, facturado bruto, neto después de comisiones, ticket promedio, cuántas publicaciones tuvieron al menos una venta, el desglose por tipo de envío (Full, Flex, colecta, a acordar) y el top 12 de productos por facturación con unidades y si están en Full. |
 | `ml_ordenes` | Las últimas 100 ventas, una por fila: fecha y hora, número de orden, comprador, total, comisión que se llevó MercadoLibre, neto, estado de la venta, estado del pago y **la fecha en que ese dinero se acredita**. |
 | `ml_caja` | Tres modos. `dia`: cuánto acredita una fecha puntual, cuánto ya está liberado y cuánto falta. `rango`: los últimos 14 días día por día. `proyeccion`: todo lo que todavía no se acreditó, con la fecha de cada acreditación futura. Es la herramienta para "¿cuándo cobro?" y "¿me alcanza para pagarle al proveedor el jueves?". |
 | `ml_facturacion` | Facturación y comisiones agregadas por el período que pidas, hasta 365 días. Pensada para conciliar contra AFIP o armar un cierre de mes. |
@@ -342,8 +347,20 @@ site_id de la cuenta conectada. El formato de moneda y fecha está en pesos arge
 y se ajusta en `src/format.js`.
 
 ### ¿Puedo usarlo con varias cuentas de MercadoLibre?
-Sí, es multicuenta. `ml_cuentas` te devuelve los IDs y el resto de las herramientas
-acepta el parámetro `cuenta` para filtrar.
+Sí, y es el caso para el que está pensado. `ml_panel` y `ml_metricas` devuelven el
+consolidado de todas tus tiendas más el desglose de cada una, sin que tengas que
+pedirlas de a una. El resto de las herramientas acepta el parámetro `cuenta` cuando
+querés mirar una sola.
+
+### ¿Cómo agrego una tienda nueva?
+Le pedís a Claude que te conecte una tienda y usa `ml_conectar`, que te devuelve el
+link de autorización de MercadoLibre. Lo abrís, iniciás sesión con la cuenta manager
+y listo: la tienda nueva ya suma al consolidado.
+
+### ¿Soporta WooCommerce o Tiendanube?
+Todavía no por MCP. Este conector cubre MercadoLibre. WooCommerce está integrado en
+el CRM que está detrás pero no expuesto como herramientas; Tiendanube no tiene
+integración aún.
 
 ### ¿Los datos de mi cuenta pasan por algún servidor de terceros?
 No. El conector corre donde vos lo pongas —tu máquina o tu servidor— y habla
@@ -357,7 +374,7 @@ directo con tu backend. Claude recibe únicamente el resultado de cada consulta.
 and query sales, revenue, real profitability, inventory, listings, buyer questions,
 claims, seller reputation, Product Ads and competitor pricing in plain language.
 
-32 tools across five areas: account management, sales and cash flow, listings and
+33 tools across five areas: account management, sales and cash flow, listings and
 stock, buyer questions and after-sales, and market intelligence. Ships with two
 transports — stdio for local use with Claude Desktop and Claude Code, and Streamable
 HTTP with full OAuth 2.1 (dynamic client registration, PKCE S256) to run it as a
