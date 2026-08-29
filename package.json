@@ -1,7 +1,7 @@
 {
   "name": "@algoritmodigital/mcp-mercadolibre",
   "version": "1.0.0",
-  "description": "Conector MCP de MercadoLibre por Algoritmo Digital. Ventas, publicaciones, preguntas e inteligencia de mercado desde Claude.",
+  "description": "Servidor MCP de MercadoLibre para Claude AI: consulta ventas, rentabilidad real, stock, publicaciones, preguntas, reclamos, Product Ads y precios de la competencia en lenguaje natural. 32 herramientas, stdio y HTTP con OAuth 2.1.",
   "type": "module",
   "license": "MIT",
   "author": "Algoritmo Digital",
@@ -10,14 +10,43 @@
     "mcp-mercadolibre": "src/stdio.js",
     "mcp-mercadolibre-http": "src/http.js"
   },
-  "files": ["src", "README.md", ".env.example"],
-  "engines": { "node": ">=20" },
+  "files": [
+    "src",
+    "README.md",
+    ".env.example"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/stdio.js",
     "start:http": "node src/http.js",
     "inspect": "npx @modelcontextprotocol/inspector node src/stdio.js"
   },
-  "keywords": ["mcp", "mercadolibre", "meli", "claude", "ecommerce", "algoritmodigital"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mercadolibre",
+    "meli",
+    "mercado-libre",
+    "claude",
+    "claude-ai",
+    "claude-desktop",
+    "claude-code",
+    "anthropic",
+    "ecommerce",
+    "marketplace",
+    "seller",
+    "vendedor",
+    "ventas",
+    "stock",
+    "rentabilidad",
+    "product-ads",
+    "oauth2",
+    "argentina",
+    "latam",
+    "algoritmodigital"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",
     "express": "^4.21.2",
