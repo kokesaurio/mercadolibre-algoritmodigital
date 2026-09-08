@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Promos — Algoritmo Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#F6F7F3; --tinta:#17211C; --gris:#5C665F; --borde:#DDE2DB; --blanco:#FFFFFF;
+  --amarillo:#FFE600; --azul:#3483FA; --verde:#00A650; --rojo:#E5484D;
+  --ok-bg:#E4F5EA; --no-bg:#FDEBEC;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --papel:#12160F; --tinta:#EDF1E8; --gris:#9BA69C; --borde:#2A3328; --blanco:#1B2117;
+    --azul:#5C9DFF; --verde:#3DBE72; --rojo:#F26D77; --ok-bg:#1C3324; --no-bg:#3A2226;
+  }
+}
+:root[data-theme="dark"]{
+  --papel:#12160F; --tinta:#EDF1E8; --gris:#9BA69C; --borde:#2A3328; --blanco:#1B2117;
+  --azul:#5C9DFF; --verde:#3DBE72; --rojo:#F26D77; --ok-bg:#1C3324; --no-bg:#3A2226;
+}
+*{box-sizing:border-box;margin:0}
+html{font-size:15px}
+body{
+  font-family:"Archivo",system-ui,sans-serif;background:var(--papel);color:var(--tinta);
+  min-height:100vh;font-variant-numeric:tabular-nums;
+}
+button{font:inherit;cursor:pointer;border:0;background:none}
+input,select{font:inherit;color:inherit}
+
+header{
+  display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--blanco);
+  border-bottom:1px solid var(--borde);position:sticky;top:0;z-index:5;
+}
+.logo{font-stretch:125%;font-weight:800;font-size:1.15rem;letter-spacing:-.01em}
+.logo em{font-style:normal;background:var(--amarillo);color:#17211C;padding:0 .3em}
+#quien{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:.86rem;color:var(--gris)}
+#selCuenta{border:1px solid var(--borde);border-radius:8px;padding:5px 8px;background:var(--blanco)}
+.salir{color:var(--gris);text-decoration:underline}
+
+/* Login */
+#login{max-width:380px;margin:9vh auto;padding:0 18px}
+#login h1{font-stretch:125%;font-weight:800;font-size:1.7rem;line-height:1.15;margin-bottom:6px}
+#login p{color:var(--gris);margin-bottom:22px}
+#login label{display:block;font-size:.86rem;font-weight:600;margin:12px 0 4px}
+#login input{width:100%;padding:10px 12px;border:1px solid var(--borde);border-radius:9px;background:var(--blanco)}
+#login input:focus-visible{outline:2px solid var(--azul);outline-offset:1px}
+#btnEntrar{width:100%;margin-top:18px;padding:11px;border-radius:9px;background:var(--azul);color:#fff;font-weight:700}
+#btnEntrar:disabled{opacity:.5;cursor:wait}
+
+/* App */
+#app{display:none;grid-template-columns:300px 1fr;min-height:calc(100vh - 49px)}
+aside{border-right:1px solid var(--borde);padding:14px}
+aside h2,main h2{font-size:.8rem;font-weight:700;color:var(--gris);margin-bottom:10px}
+.promo{
+  width:100%;text-align:left;padding:10px 12px;border-radius:10px;margin-bottom:6px;
+  border:1px solid var(--borde);background:var(--blanco);display:block
+}
+.promo:hover{border-color:var(--azul)}
+.promo[aria-current="true"]{border-color:var(--tinta);box-shadow:inset 3px 0 0 var(--amarillo)}
+.promo b{display:block;font-size:.94rem}
+.promo span{font-size:.8rem;color:var(--gris)}
+main{padding:14px 18px 110px}
+
+/* Regla */
+#regla{
+  display:flex;flex-wrap:wrap;gap:14px;align-items:end;padding:12px 14px;margin-bottom:14px;
+  background:var(--blanco);border:1px solid var(--borde);border-radius:12px
+}
+#regla .campo label{display:block;font-size:.78rem;font-weight:600;color:var(--gris);margin-bottom:3px}
+#regla input{width:110px;padding:7px 9px;border:1px solid var(--borde);border-radius:8px;background:var(--papel)}
+#regla .acciones{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 13px;border-radius:9px;font-weight:600;border:1px solid var(--borde);background:var(--blanco)}
+.btn:hover{border-color:var(--tinta)}
+.btn.azul{background:var(--azul);border-color:var(--azul);color:#fff}
+#estadoAuto{font-size:.8rem;color:var(--gris)}
+#estadoAuto b.on{color:var(--verde)}
+
+/* Tabla */
+table{width:100%;border-collapse:collapse;background:var(--blanco);border:1px solid var(--borde);border-radius:12px;overflow:hidden}
+th,td{padding:9px 10px;text-align:left;font-size:.88rem;border-bottom:1px solid var(--borde)}
+th{font-size:.76rem;color:var(--gris);font-weight:700;background:var(--papel)}
+td.n,th.n{text-align:right}
+tr.cumple td:first-child{box-shadow:inset 3px 0 0 var(--amarillo)}
+.pill{font-size:.74rem;font-weight:700;padding:2px 7px;border-radius:99px}
+.pill.ok{background:var(--ok-bg);color:var(--verde)}
+.pill.no{background:var(--no-bg);color:var(--rojo)}
+.tit{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muted{color:var(--gris)}
+#vacio,#err{padding:26px;text-align:center;color:var(--gris)}
+#err{color:var(--rojo)}
+
+/* Barra de aceptación */
+#barra{color:#17211C;
+  position:fixed;left:0;right:0;bottom:0;transform:translateY(110%);transition:transform .18s ease;
+  background:var(--amarillo);border-top:2px solid var(--tinta);padding:12px 18px;
+  display:flex;gap:14px;align-items:center;flex-wrap:wrap;z-index:6
+}
+#barra.visible{transform:none}
+#barra b{font-stretch:110%;font-weight:800}
+#btnAceptar{background:#17211C;color:var(--amarillo);padding:10px 18px;border-radius:10px;font-weight:800;margin-left:auto}
+@media (prefers-reduced-motion:reduce){#barra{color:#17211C;transition:none}}
+
+/* Modal */
+dialog{border:1px solid var(--borde);border-radius:14px;padding:20px;max-width:520px;width:92vw}
+dialog::backdrop{background:rgba(23,33,28,.45)}
+dialog h3{font-stretch:115%;font-weight:800;margin-bottom:8px}
+dialog ul{margin:10px 0 16px;padding-left:18px;max-height:40vh;overflow:auto;font-size:.9rem}
+dialog li{margin-bottom:4px}
+.modalBotones{display:flex;gap:10px;justify-content:flex-end}
+#resultado{font-size:.9rem;margin-top:10px}
+@media (max-width:860px){
+  #app{grid-template-columns:1fr}
+  aside{border-right:0;border-bottom:1px solid var(--borde)}
+  .tit{max-width:150px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Promos <em>ML</em></div>
+  <div id="quien" hidden>
+    <select id="selCuenta" aria-label="Tienda"></select>
+    <button class="salir" id="btnSalir">Salir</button>
+  </div>
+</header>
+
+<section id="login">
+  <h1>Aceptá promociones sin regalar margen</h1>
+  <p>Panel de Algoritmo Digital: mirá qué ofrece MercadoLibre, filtrá por tu regla de descuento y aceptá en bloque.</p>
+  <label for="inBase">URL del panel</label>
+  <input id="inBase" placeholder="https://panel.algoritmodigital.com.ar" autocomplete="url">
+  <label for="inUser">Usuario</label>
+  <input id="inUser" autocomplete="username">
+  <label for="inPass">Contraseña</label>
+  <input id="inPass" type="password" autocomplete="current-password">
+  <button id="btnEntrar">Entrar</button>
+  <button id="btnDemo" style="width:100%;margin-top:10px;padding:10px;border-radius:9px;border:1px dashed var(--borde);background:none;color:var(--gris);font-weight:600">Probar con datos de ejemplo</button>
+  <p id="loginErr" style="color:var(--rojo);margin-top:12px" role="alert"></p>
+</section>
+
+<div id="app">
+  <aside>
+    <h2>Promociones disponibles</h2>
+    <div id="listaPromos"></div>
+  </aside>
+  <main>
+    <div id="regla">
+      <div class="campo">
+        <label for="inDesc">Descuento máx. que pongo yo</label>
+        <input id="inDesc" type="number" min="0" max="100" step="0.5" value="10"> %
+      </div>
+      <div class="campo">
+        <label for="inMeli">Aporte mínimo de MercadoLibre</label>
+        <input id="inMeli" type="number" min="0" max="100" step="0.5" value="0"> %
+      </div>
+      <div class="campo">
+        <label for="inPrecioMin">Precio final mínimo</label>
+        <input id="inPrecioMin" type="number" min="0" step="1" value="0"> $
+      </div>
+      <div class="acciones">
+        <button class="btn" id="btnFiltrar">Marcar las que cumplen</button>
+        <button class="btn azul" id="btnGuardarRegla">Activar aceptación automática</button>
+        <span id="estadoAuto"></span>
+      </div>
+    </div>
+    <h2 id="tituloItems">Elegí una promoción</h2>
+    <div id="contItems"></div>
+  </main>
+</div>
+
+<div id="barra">
+  <b id="cuantas"></b>
+  <span id="resumenSel" class="muted"></span>
+  <button id="btnAceptar">Aceptar seleccionadas</button>
+</div>
+
+<dialog id="modal">
+  <h3>Confirmar aceptación</h3>
+  <p>Esto activa las promociones <b>en MercadoLibre</b>, visible para compradores. Se van a aceptar:</p>
+  <ul id="listaConfirmar"></ul>
+  <div class="modalBotones">
+    <button class="btn" id="btnCancelar">Cancelar</button>
+    <button class="btn azul" id="btnConfirmar">Sí, aceptar</button>
+  </div>
+  <div id="resultado" aria-live="polite"></div>
+</dialog>
+
+<script>
+'use strict';
+// ── Estado (el token vive solo en memoria: al cerrar la pestaña, se pide login de nuevo) ──
+const S = { base:'', token:'', cuenta:null, promos:[], promoActiva:null, items:[], sel:new Set() };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = (n) => n == null || isNaN(n) ? '—' : '$ ' + Number(n).toLocaleString('es-AR', {maximumFractionDigits:0});
+const pct = (n) => n == null || isNaN(n) ? '—' : Number(n).toLocaleString('es-AR', {maximumFractionDigits:1}) + '%';
+
+// ── Modo demo: datos de ejemplo para ver la interfaz sin conectar el panel ──
+const DEMO = {
+  cuentas: [{ id: 1, nombre: 'TIENDA_EJEMPLO' }],
+  promos: [
+    { id: 'P-HOTSALE', name: 'Hot Sale 2026 (co-fondeada)', type: 'DEAL', status: 'candidate' },
+    { id: 'P-DELDIA', name: 'Descuento del día', type: 'DOD', status: 'candidate' },
+    { id: 'P-LIQUID', name: 'Liquidación de temporada', type: 'MARKETPLACE_CAMPAIGN', status: 'started' },
+  ],
+  items: {
+    'P-HOTSALE': [
+      { item_id: 'MLA111111', title: 'Termo Acero Inoxidable 1 Litro Pico Cebador', price: 42000, suggested_discounted_price: 37800, meli_percentage: 5 },
+      { item_id: 'MLA222222', title: 'Mate Torpedo Acero con Bombilla', price: 18500, suggested_discounted_price: 15900, meli_percentage: 4 },
+      { item_id: 'MLA333333', title: 'Set Matero Completo Cuero Ecológico', price: 56000, suggested_discounted_price: 42000, meli_percentage: 3 },
+      { item_id: 'MLA444444', title: 'Botella Térmica Deportiva 750ml', price: 24900, suggested_discounted_price: 23200, meli_percentage: 6 },
+    ],
+    'P-DELDIA': [
+      { item_id: 'MLA555555', title: 'Vaso Térmico con Tapa 500ml', price: 15900, suggested_discounted_price: 12700, meli_percentage: 0 },
+      { item_id: 'MLA666666', title: 'Termo Media Manija 1.2 L', price: 61000, suggested_discounted_price: 56700, meli_percentage: 2 },
+    ],
+    'P-LIQUID': [
+      { item_id: 'MLA777777', title: 'Yerbera y Azucarera Acero Set x2', price: 13500, suggested_discounted_price: 9400, meli_percentage: 0 },
+    ],
+  },
+  regla: { activa: false, max_desc_vendedor: 10, min_aporte_meli: 0, precio_minimo: 0 },
+};
+function demoApi(ruta, opciones = {}) {
+  const metodo = (opciones.method || 'GET').toUpperCase();
+  if (ruta.startsWith('/api/ml/cuentas')) return DEMO.cuentas;
+  if (ruta.startsWith('/api/ml/promociones/regla')) {
+    if (metodo === 'PUT') { Object.assign(DEMO.regla, JSON.parse(opciones.body), { activa: true }); }
+    return { ...DEMO.regla };
+  }
+  const mAceptar = ruta.match(/\/api\/ml\/promociones\/([^/?]+)\/aceptar/);
+  if (mAceptar) {
+    const pedido = JSON.parse(opciones.body).items.map((i) => i.id);
+    return { aceptados: pedido.slice(0, Math.max(1, pedido.length - (pedido.length > 2 ? 1 : 0))), errores: pedido.length > 2 ? [{ id: pedido[pedido.length - 1], error: 'sin stock suficiente (ejemplo)' }] : [] };
+  }
+  const mItems = ruta.match(/\/api\/ml\/promociones\/([^/?]+)\/items/);
+  if (mItems) return { items: DEMO.items[decodeURIComponent(mItems[1])] || [] };
+  if (ruta.startsWith('/api/ml/promociones')) return { promos: DEMO.promos };
+  return {};
+}
+
+async function api(ruta, opciones = {}) {
+  if (S.demo) return Promise.resolve(demoApi(ruta, opciones));
+  const r = await fetch(S.base + ruta, {
+    ...opciones,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(S.token ? { Authorization: 'Bearer ' + S.token } : {}),
+      ...(opciones.headers || {}),
+    },
+  }).catch(() => { throw new Error('No se pudo conectar. Verificá la URL y el CORS del panel.'); });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { salir(); throw new Error('Sesión vencida: entrá de nuevo.'); }
+  if (!r.ok) throw new Error(j.error || j.message || ('Error ' + r.status + ' del panel.'));
+  return j;
+}
+
+// ── Normalización defensiva: el CRM puede devolver campos en castellano o los de ML ──
+function normalizarItem(r) {
+  const id = r.item_id || r.id || '';
+  const precio = num(r.price ?? r.precio ?? r.original_price);
+  const final = num(r.suggested_discounted_price ?? r.precio_sugerido ?? r.min_discounted_price ?? r.precio_final ?? r.deal_price);
+  const meli = num(r.meli_percentage ?? r.aporte_meli) || 0;
+  let vendedor = num(r.seller_percentage ?? r.descuento_vendedor);
+  const total = (precio && final) ? Math.round((1 - final / precio) * 10000) / 100 : null;
+  if (vendedor == null && total != null) vendedor = Math.max(0, Math.round((total - meli) * 100) / 100);
+  return { id, titulo: r.title || r.titulo || id, precio, final, meli, vendedor, total, estado: r.status || r.estado || '' };
+}
+function num(v){ const n = Number(v); return Number.isFinite(n) ? n : null; }
+function regla(){ return { maxVendedor: num($('inDesc').value) ?? 0, minMeli: num($('inMeli').value) ?? 0, precioMin: num($('inPrecioMin').value) ?? 0 }; }
+function cumple(it, rg) {
+  if (it.vendedor == null) return false;                 // sin datos no se acepta a ciegas
+  if (it.vendedor > rg.maxVendedor) return false;
+  if ((it.meli ?? 0) < rg.minMeli) return false;
+  if (rg.precioMin > 0 && (it.final == null || it.final < rg.precioMin)) return false;
+  return true;
+}
+
+// ── Login / cuentas ──
+$('btnEntrar').addEventListener('click', async () => {
+  const base = $('inBase').value.trim().replace(/\/+$/, '');
+  $('loginErr').textContent = '';
+  if (!/^https:\/\//.test(base) && !base.startsWith('http://localhost')) {
+    $('loginErr').textContent = 'La URL del panel tiene que ser https.'; return;
+  }
+  $('btnEntrar').disabled = true;
+  try {
+    S.base = base;
+    const j = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ username: $('inUser').value.trim(), password: $('inPass').value }) });
+    if (!j.token) throw new Error(j.error || 'Usuario o contraseña incorrectos.');
+    S.token = j.token;
+    $('inPass').value = '';
+    await cargarCuentas();
+    $('login').hidden = true; $('quien').hidden = false; $('app').style.display = 'grid';
+    await cargarPromos();
+  } catch (e) { $('loginErr').textContent = e.message; }
+  $('btnEntrar').disabled = false;
+});
+function salir(){ S.token=''; S.base=''; S.demo=false; S.sel.clear(); $('app').style.display='none'; $('quien').hidden=true; $('login').hidden=false; barra(); }
+$('btnSalir').addEventListener('click', salir);
+$('btnDemo').addEventListener('click', async () => {
+  S.demo = true; S.token = 'demo'; S.base = '';
+  await cargarCuentas();
+  document.querySelector('.logo').append(' · demo');
+  $('login').hidden = true; $('quien').hidden = false; $('app').style.display = 'grid';
+  await cargarPromos();
+});
+
+async function cargarCuentas() {
+  const j = await api('/api/ml/cuentas');
+  const cuentas = Array.isArray(j) ? j : (j.cuentas || []);
+  const sel = $('selCuenta');
+  sel.innerHTML = cuentas.map((c) => `<option value="${esc(c.id)}">${esc(c.nombre || c.nickname || ('Cuenta ' + c.id))}</option>`).join('');
+  S.cuenta = cuentas[0]?.id ?? null;
+  sel.addEventListener('change', async () => { S.cuenta = sel.value; S.sel.clear(); barra(); await cargarPromos(); await cargarRegla(); });
+  await cargarRegla();
+}
+
+// ── Promociones ──
+async function cargarPromos() {
+  $('listaPromos').innerHTML = '<p class="muted">Cargando…</p>';
+  try {
+    const j = await api('/api/ml/promociones?cuenta=' + encodeURIComponent(S.cuenta ?? ''));
+    S.promos = j.promos || j.results || (Array.isArray(j) ? j : []);
+    if (!S.promos.length) { $('listaPromos').innerHTML = '<p class="muted">MercadoLibre no está ofreciendo promociones ahora.</p>'; return; }
+    $('listaPromos').innerHTML = S.promos.map((p) => `
+      <button class="promo" data-id="${esc(p.id)}" data-tipo="${esc(p.type || p.tipo || '')}">
+        <b>${esc(p.name || p.nombre || p.id)}</b>
+        <span>${esc(p.type || p.tipo || '')} · ${esc(p.status || p.estado || '')}</span>
+      </button>`).join('');
+    document.querySelectorAll('.promo').forEach((b) => b.addEventListener('click', () => abrirPromo(b.dataset.id, b.dataset.tipo, b)));
+  } catch (e) { $('listaPromos').innerHTML = '<p id="err">' + esc(e.message) + '</p>'; }
+}
+
+async function abrirPromo(id, tipo, boton) {
+  document.querySelectorAll('.promo').forEach((b) => b.removeAttribute('aria-current'));
+  boton.setAttribute('aria-current', 'true');
+  S.promoActiva = { id, tipo }; S.sel.clear(); barra();
+  $('tituloItems').textContent = 'Publicaciones elegibles';
+  $('contItems').innerHTML = '<p class="muted" style="padding:20px">Cargando…</p>';
+  try {
+    const j = await api('/api/ml/promociones/' + encodeURIComponent(id) + '/items?cuenta=' + encodeURIComponent(S.cuenta ?? '') + (tipo ? '&tipo=' + encodeURIComponent(tipo) : ''));
+    const crudos = j.items || j.results || (Array.isArray(j) ? j : []);
+    S.items = crudos.map(normalizarItem).filter((it) => it.id);
+    pintarItems();
+  } catch (e) { $('contItems').innerHTML = '<p id="err">' + esc(e.message) + '</p>'; }
+}
+
+function pintarItems() {
+  if (!S.items.length) { $('contItems').innerHTML = '<p id="vacio">Esta promoción no tiene publicaciones elegibles.</p>'; return; }
+  const rg = regla();
+  $('contItems').innerHTML = `
+  <table>
+    <thead><tr>
+      <th><input type="checkbox" id="selTodo" aria-label="Seleccionar todo"></th>
+      <th>Publicación</th><th class="n">Precio</th><th class="n">Precio promo</th>
+      <th class="n">Pongo yo</th><th class="n">Pone ML</th><th>Regla</th>
+    </tr></thead>
+    <tbody>${S.items.map((it, i) => {
+      const ok = cumple(it, rg);
+      return `<tr class="${ok ? 'cumple' : ''}">
+        <td><input type="checkbox" data-i="${i}" ${S.sel.has(it.id) ? 'checked' : ''} aria-label="Seleccionar ${esc(it.id)}"></td>
+        <td class="tit" title="${esc(it.titulo)}">${esc(it.titulo)}<br><span class="muted">${esc(it.id)}</span></td>
+        <td class="n">${money(it.precio)}</td>
+        <td class="n"><b>${money(it.final)}</b></td>
+        <td class="n">${pct(it.vendedor)}</td>
+        <td class="n">${pct(it.meli)}</td>
+        <td><span class="pill ${ok ? 'ok' : 'no'}">${ok ? 'cumple' : 'no cumple'}</span></td>
+      </tr>`; }).join('')}
+    </tbody>
+  </table>`;
+  $('selTodo').addEventListener('change', (e) => {
+    S.items.forEach((it) => e.target.checked ? S.sel.add(it.id) : S.sel.delete(it.id));
+    pintarItems(); barra();
+  });
+  document.querySelectorAll('tbody input[type=checkbox]').forEach((c) =>
+    c.addEventListener('change', () => { const it = S.items[+c.dataset.i]; c.checked ? S.sel.add(it.id) : S.sel.delete(it.id); barra(); }));
+}
+$('btnFiltrar').addEventListener('click', () => {
+  const rg = regla(); S.sel.clear();
+  S.items.forEach((it) => { if (cumple(it, rg)) S.sel.add(it.id); });
+  pintarItems(); barra();
+});
+['inDesc','inMeli','inPrecioMin'].forEach((id) => $(id).addEventListener('change', pintarItems));
+
+// ── Barra y aceptación ──
+function barra() {
+  const n = S.sel.size;
+  $('barra').classList.toggle('visible', n > 0);
+  if (!n) return;
+  $('cuantas').textContent = n + (n === 1 ? ' publicación seleccionada' : ' publicaciones seleccionadas');
+  const sel = S.items.filter((it) => S.sel.has(it.id));
+  const peor = Math.max(...sel.map((it) => it.vendedor ?? 0));
+  $('resumenSel').textContent = 'Descuento propio máximo entre las elegidas: ' + pct(peor);
+}
+$('btnAceptar').addEventListener('click', () => {
+  const sel = S.items.filter((it) => S.sel.has(it.id));
+  $('listaConfirmar').innerHTML = sel.map((it) => `<li>${esc(it.titulo)} — ${money(it.precio)} → <b>${money(it.final)}</b> (pongo ${pct(it.vendedor)})</li>`).join('');
+  $('resultado').textContent = '';
+  $('btnConfirmar').disabled = false;
+  $('modal').showModal();
+});
+$('btnCancelar').addEventListener('click', () => $('modal').close());
+$('btnConfirmar').addEventListener('click', async () => {
+  $('btnConfirmar').disabled = true;
+  $('resultado').textContent = 'Aceptando…';
+  try {
+    const items = S.items.filter((it) => S.sel.has(it.id)).map((it) => ({ id: it.id, precio: it.final }));
+    const j = await api('/api/ml/promociones/' + encodeURIComponent(S.promoActiva.id) + '/aceptar', {
+      method: 'POST',
+      body: JSON.stringify({ cuenta: S.cuenta, tipo: S.promoActiva.tipo || undefined, items }),
+    });
+    const ok = j.aceptados?.length ?? 0, mal = j.errores?.length ?? 0;
+    $('resultado').innerHTML = `✅ ${ok} aceptadas` + (mal ? ` — ⚠️ ${mal} con error: ${esc((j.errores || []).map((e) => e.id + ' (' + (e.error || '') + ')').join(', '))}` : '');
+    S.sel.clear(); barra();
+    if (S.promoActiva) setTimeout(() => { $('modal').close(); abrirPromo(S.promoActiva.id, S.promoActiva.tipo, document.querySelector('.promo[aria-current]')); }, 1600);
+  } catch (e) { $('resultado').textContent = e.message; $('btnConfirmar').disabled = false; }
+});
+
+// ── Regla automática (la ejecuta el cron del panel, no el navegador) ──
+async function cargarRegla() {
+  try {
+    const j = await api('/api/ml/promociones/regla?cuenta=' + encodeURIComponent(S.cuenta ?? ''));
+    if (j.max_desc_vendedor != null) $('inDesc').value = j.max_desc_vendedor;
+    if (j.min_aporte_meli != null) $('inMeli').value = j.min_aporte_meli;
+    if (j.precio_minimo != null) $('inPrecioMin').value = j.precio_minimo;
+    $('estadoAuto').innerHTML = j.activa ? 'Automático: <b class="on">activo</b>' : 'Automático: <b>apagado</b>';
+    $('btnGuardarRegla').textContent = j.activa ? 'Actualizar regla automática' : 'Activar aceptación automática';
+  } catch { $('estadoAuto').textContent = ''; } // el panel todavía no soporta reglas: se puede usar igual en modo manual
+}
+$('btnGuardarRegla').addEventListener('click', async () => {
+  const rg = regla();
+  if (!confirm('El panel va a aceptar solo, todos los días, las promociones que cumplan: descuento propio ≤ ' + rg.maxVendedor + '%, aporte de ML ≥ ' + rg.minMeli + '% y precio final ≥ ' + money(rg.precioMin) + '. ¿Activar?')) return;
+  try {
+    await api('/api/ml/promociones/regla', { method: 'PUT', body: JSON.stringify({ cuenta: S.cuenta, activa: true, max_desc_vendedor: rg.maxVendedor, min_aporte_meli: rg.minMeli, precio_minimo: rg.precioMin }) });
+    await cargarRegla();
+  } catch (e) { alert(e.message); }
+});
+</script>
+</body>
+</html>

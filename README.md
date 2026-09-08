@@ -277,6 +277,26 @@ En [`skills/`](skills/) hay cinco skills listas para instalar en Claude
 | `competencia-ml` | Semáforo de posición de precios y recomendaciones validadas por margen |
 | `publicidad-ml` | Analiza Product Ads (ACOS vs margen) y evalúa promociones |
 
+## Panel de promociones
+
+En [`panel/promociones.html`](panel/promociones.html) hay una interfaz web
+autocontenida (un solo archivo, sin dependencias) para **aceptar promociones de
+MercadoLibre en bloque sin regalar margen**: lista las campañas ofrecidas, muestra
+por publicación cuánto pone el vendedor y cuánto co-fondea ML, filtra por una regla
+propia (descuento máximo, aporte mínimo de ML, precio mínimo) y acepta las
+seleccionadas con confirmación. Incluye modo demo con datos de ejemplo y modo
+oscuro. Se sirve como archivo estático (nginx) desde el mismo dominio del panel y
+se conecta siempre a través de la API de Algoritmo Digital.
+
+Para la aceptación real y el modo automático, el CRM debe exponer:
+
+- `POST /api/ml/promociones/:id/aceptar` con `{ "cuenta", "tipo"?, "items": [{ "id", "precio" }] }`
+  → activa cada ítem en la promoción vía la API de ML y responde
+  `{ "aceptados": [ids], "errores": [{ "id", "error" }] }`.
+- `GET` y `PUT /api/ml/promociones/regla?cuenta=` con
+  `{ "activa", "max_desc_vendedor", "min_aporte_meli", "precio_minimo" }` — la regla
+  que un cron del CRM ejecuta a diario para aceptar automáticamente lo que cumple.
+
 Implementa OAuth 2.1 completo: registro dinámico de clientes (RFC 7591), PKCE S256
 obligatorio, metadata de servidor de autorización (RFC 8414) y de recurso protegido
 (RFC 9728), access tokens de 1 hora y refresh tokens de 7 días.
