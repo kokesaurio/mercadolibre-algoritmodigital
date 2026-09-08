@@ -28,7 +28,7 @@ export const INSTRUCCIONES = [
  */
 export function crearServidor({ crm, allowWrite = true }) {
   const server = new McpServer(
-    { name: 'mercadolibre-algoritmodigital', version: '1.0.0' },
+    { name: 'mercadolibre-algoritmodigital', version: '1.1.0' },
     { instructions: INSTRUCCIONES }
   );
 

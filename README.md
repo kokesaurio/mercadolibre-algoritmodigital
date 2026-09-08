@@ -202,7 +202,7 @@ Para vos o tu equipo, corriendo en la máquina de cada uno.
   "mcpServers": {
     "mercadolibre": {
       "command": "npx",
-      "args": ["-y", "@algoritmodigital/mcp-mercadolibre"],
+      "args": ["-y", "github:kokesaurio/mercadolibre-algoritmodigital"],
       "env": {
         "CRM_BASE_URL": "https://tu-crm.ejemplo.com",
         "CRM_USERNAME": "tu-usuario",
@@ -219,7 +219,7 @@ Para vos o tu equipo, corriendo en la máquina de cada uno.
 claude mcp add mercadolibre \
   -e CRM_BASE_URL=https://tu-crm.ejemplo.com \
   -e CRM_USERNAME=tu-usuario -e CRM_PASSWORD=tu-clave \
-  -- npx -y @algoritmodigital/mcp-mercadolibre
+  -- npx -y github:kokesaurio/mercadolibre-algoritmodigital
 ```
 
 Si la cuenta tiene 2FA, generá un JWT desde el panel y usá `CRM_TOKEN` en lugar de
@@ -228,8 +228,9 @@ pasarla en cada consulta.
 
 ### Opción B — remoto (conector con OAuth)
 
-Un solo servidor para todos tus clientes: cada uno lo agrega en Claude y se loguea
-con su propio usuario del panel. Nadie configura nada.
+Un solo servidor para todos tus clientes: cada uno lo agrega en Claude y
+**se loguea con su propia cuenta de MercadoLibre** (a través de la aplicación
+de ML de Algoritmo Digital). Nadie configura nada.
 
 ```bash
 git clone https://github.com/kokesaurio/mercadolibre-algoritmodigital.git
@@ -242,7 +243,39 @@ npm run start:http
 Publicalo detrás de HTTPS (nginx, Caddy, Railway, Fly.io) y en Claude entrá a
 **Configuración → Conectores → Agregar conector personalizado** con la URL
 `https://tu-dominio/mcp`. Claude descubre solo el servidor de autorización, se
-registra, y le muestra al usuario la pantalla de login.
+registra, y redirige al usuario a MercadoLibre para autorizar con su cuenta.
+
+**Cómo funciona el login con MercadoLibre**: cuando Claude manda al usuario a
+`/authorize`, el conector le pide al CRM la URL de autorización de ML y lo
+redirige ahí. El usuario aprueba con su cuenta de ML, MercadoLibre vuelve a
+`{PUBLIC_URL}/ml/callback`, y el conector le pasa el `code` al CRM, que lo
+canjea (guarda los tokens de ML de esa cuenta) y devuelve un JWT del panel
+limitado a esa cuenta. Si el CRM todavía no expone estos endpoints, el
+conector cae automáticamente al formulario clásico de usuario y clave.
+
+**Endpoints que debe exponer el CRM** (públicos, con rate limit):
+
+- `GET /api/auth/ml/url?redirect_uri=...&state=...` → `{ "url": "https://auth.mercadolibre.com.ar/authorization?..." }`.
+  Validar que `redirect_uri` sea la del conector propio (allow-list).
+- `POST /api/auth/ml` con `{ "code", "redirect_uri" }` → canjea el code contra
+  `https://api.mercadolibre.com/oauth/token` con el app id/secret, hace upsert de
+  la cuenta por `user_id` de ML, y responde `{ "token": "<JWT>", "nombre": "<nickname>" }`.
+  **Importante**: el JWT emitido tiene que quedar limitado a esa cuenta de ML
+  (aislamiento multi-tenant), y en el DevCenter de MercadoLibre hay que agregar
+  `{PUBLIC_URL}/ml/callback` a las redirect URIs de la aplicación.
+
+## Skills incluidas
+
+En [`skills/`](skills/) hay cinco skills listas para instalar en Claude
+(Configuración → Capacidades → Skills), pensadas para usarse con este conector:
+
+| Skill | Qué hace |
+| --- | --- |
+| `mejorar-publicaciones-ml` | Audita publicaciones con datos reales y propone mejoras de título, precio y stock |
+| `responder-preguntas-ml` | Despacha preguntas de compradores con respuestas listas para aprobar |
+| `reporte-ventas-ml` | Reporte ejecutivo del día/semana/mes con alertas urgentes primero |
+| `competencia-ml` | Semáforo de posición de precios y recomendaciones validadas por margen |
+| `publicidad-ml` | Analiza Product Ads (ACOS vs margen) y evalúa promociones |
 
 Implementa OAuth 2.1 completo: registro dinámico de clientes (RFC 7591), PKCE S256
 obligatorio, metadata de servidor de autorización (RFC 8414) y de recurso protegido

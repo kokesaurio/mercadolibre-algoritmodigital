@@ -45,6 +45,29 @@ const sesionDe = montarOAuth(app, {
   publicUrl: PUBLIC_URL,
   secret: SECRET,
   almacen,
+  // Login con MercadoLibre delegado al CRM (que guarda el app secret de ML).
+  // Si el CRM no expone estos endpoints todavía, el conector cae al formulario clásico.
+  mlAuthUrl: async (redirectUri, state) => {
+    const u = new URL(CRM_BASE_URL + '/api/auth/ml/url');
+    u.searchParams.set('redirect_uri', redirectUri);
+    u.searchParams.set('state', state);
+    const r = await fetch(u, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => ({}));
+    return j.url || null;
+  },
+  mlExchange: async (code, redirectUri) => {
+    const r = await fetch(CRM_BASE_URL + '/api/auth/ml', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ code, redirect_uri: redirectUri }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || ('El CRM rechazó el login con MercadoLibre (' + r.status + ')'));
+    if (!j.token) throw new Error('El CRM no devolvió token.');
+    return { token: j.token, nombre: j.nombre };
+  },
   loginCrm: async (username, password) => {
     const c = new CrmClient({ baseUrl: CRM_BASE_URL, username, password });
     const token = await c.login();

@@ -6,6 +6,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const b64url = (b) => Buffer.from(b).toString('base64url');
+const escaparHtml = (s) => String(s ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const rnd = (n = 32) => crypto.randomBytes(n).toString('base64url');
 
 export function firmar(payload, secret) {
@@ -56,11 +59,18 @@ export function montarOAuth(app, opts) {
     secret,
     almacen,
     loginCrm,          // async (username, password) => { token, nombre }
+    mlAuthUrl = null,  // async (redirectUri, state) => url de autorizacion de ML, o null
+    mlExchange = null, // async (code, redirectUri) => { token, nombre }
     ttlAccess = 3600,
     ttlRefresh = 60 * 60 * 24 * 7,
   } = opts;
 
-  const codigos = new Map(); // code -> { client_id, redirect_uri, challenge, sessionId, exp }
+  const codigos = new Map();    // code -> { client_id, redirect_uri, challenge, sessionId, exp }
+  const pendientes = new Map(); // state interno -> solicitud de /authorize en curso (login con ML)
+  const barrerPendientes = () => {
+    const ahora = Date.now();
+    for (const [k, v] of pendientes) if (v.exp < ahora) pendientes.delete(k);
+  };
   const issuer = publicUrl.replace(/\/+$/, '');
 
   const metadataAS = {
@@ -127,15 +137,15 @@ font-weight:600;font-size:14px;cursor:pointer}
 </style></head><body><form class="card" method="post" action="/authorize">
 <h1>Conectar con MercadoLibre</h1>
 <p class="sub">Ingresá con tu usuario del panel de Algoritmo Digital.</p>
-${Object.entries(params).map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v ?? '').replace(/"/g, '&quot;')}">`).join('')}
+${Object.entries(params).map(([k, v]) => `<input type="hidden" name="${k}" value="${escaparHtml(v)}">`).join('')}
 <label for="u">Usuario o email</label><input id="u" name="username" autocomplete="username" autofocus required>
 <label for="p">Contraseña</label><input id="p" name="password" type="password" autocomplete="current-password" required>
 <button type="submit">Autorizar</button>
-${aviso ? `<div class="err">${aviso}</div>` : ''}
+${aviso ? `<div class="err">${escaparHtml(aviso)}</div>` : ''}
 <div class="pie">Algoritmo Digital · conector MCP</div>
 </form></body></html>`;
 
-  app.get('/authorize', (req, res) => {
+  app.get('/authorize', async (req, res) => {
     const q = req.query || {};
     const cliente = almacen.cliente(String(q.client_id || ''));
     if (!cliente) return res.status(400).send('client_id desconocido. Volvé a agregar el conector.');
@@ -144,6 +154,24 @@ ${aviso ? `<div class="err">${aviso}</div>` : ''}
     }
     if (q.code_challenge_method !== 'S256' || !q.code_challenge) {
       return res.status(400).send('Se requiere PKCE con S256.');
+    }
+    // Login con MercadoLibre: el usuario autoriza con SU cuenta de ML contra la app
+    // de Algoritmo Digital. Si el CRM no expone el endpoint, caemos al formulario.
+    if (mlAuthUrl && mlExchange) {
+      try {
+        barrerPendientes();
+        const st = rnd(18);
+        pendientes.set(st, {
+          client_id: String(q.client_id),
+          redirect_uri: String(q.redirect_uri),
+          challenge: String(q.code_challenge),
+          state: q.state ? String(q.state) : '',
+          exp: Date.now() + 10 * 60 * 1000,
+        });
+        const url = await mlAuthUrl(issuer + '/ml/callback', st);
+        if (url) return res.redirect(302, url);
+        pendientes.delete(st);
+      } catch { /* CRM sin soporte de login ML: seguimos con el formulario */ }
     }
     res.type('html').send(formulario({
       client_id: q.client_id,
@@ -188,6 +216,45 @@ ${aviso ? `<div class="err">${aviso}</div>` : ''}
     url.searchParams.set('code', code);
     if (b.state) url.searchParams.set('state', String(b.state));
     res.redirect(302, url.toString());
+  });
+
+  // ── Vuelta de MercadoLibre: canjeamos el code vía CRM y cerramos el circuito ──
+  app.get('/ml/callback', async (req, res) => {
+    const q = req.query || {};
+    const st = String(q.state || '');
+    const p = pendientes.get(st);
+    pendientes.delete(st);
+    if (!p || p.exp < Date.now()) {
+      return res.status(400).send('La sesión de autorización venció. Volvé a conectar el conector desde Claude.');
+    }
+    const volver = new URL(p.redirect_uri);
+    if (p.state) volver.searchParams.set('state', p.state);
+    if (q.error || !q.code) {
+      volver.searchParams.set('error', 'access_denied');
+      return res.redirect(302, volver.toString());
+    }
+    let r;
+    try {
+      r = await mlExchange(String(q.code), issuer + '/ml/callback');
+    } catch (e) {
+      return res.status(401).send('No pudimos validar tu cuenta de MercadoLibre: ' + escaparHtml(e?.message || 'error desconocido') + '. Cerrá esta pestaña y volvé a intentar desde Claude.');
+    }
+    const sesion = almacen.guardarSesion({
+      id: rnd(18),
+      crmToken: r.token,
+      nombre: r.nombre || 'vendedor',
+      creado: Date.now(),
+    });
+    const code = rnd(24);
+    codigos.set(code, {
+      client_id: p.client_id,
+      redirect_uri: p.redirect_uri,
+      challenge: p.challenge,
+      sessionId: sesion.id,
+      exp: Date.now() + 5 * 60 * 1000,
+    });
+    volver.searchParams.set('code', code);
+    res.redirect(302, volver.toString());
   });
 
   const emitir = (sesion) => ({
