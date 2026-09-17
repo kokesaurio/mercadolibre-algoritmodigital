@@ -301,6 +301,23 @@ Implementa OAuth 2.1 completo: registro dinámico de clientes (RFC 7591), PKCE S
 obligatorio, metadata de servidor de autorización (RFC 8414) y de recurso protegido
 (RFC 9728), access tokens de 1 hora y refresh tokens de 7 días.
 
+## Desarrollo en el entorno de Claude
+
+El repo se puede desarrollar y probar **completo sin CRM real ni VPS** — pensado
+para trabajarlo con Claude o Claude Code: cloná, instalá y corré.
+
+```bash
+npm install
+npm test      # suite E2E: OAuth completo, login con ML, fallback, stdio y herramientas (8 casos)
+npm run dev   # CRM simulado (:9999, usuario demo/demo) + conector (:8787) para probar a mano
+```
+
+El CRM simulado vive en [`dev/entorno.js`](dev/entorno.js) e incluye un
+MercadoLibre falso para el flujo de login, datos de ejemplo de las rutas
+principales y los endpoints de promociones. Regla para contribuir (humano o IA):
+**cualquier cambio en `src/` tiene que dejar `npm test` en verde**, y las
+funcionalidades nuevas suman su caso a la suite.
+
 ---
 
 ## Variables de entorno

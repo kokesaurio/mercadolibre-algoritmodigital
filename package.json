@@ -21,7 +21,9 @@
   "scripts": {
     "start": "node src/stdio.js",
     "start:http": "node src/http.js",
-    "inspect": "npx @modelcontextprotocol/inspector node src/stdio.js"
+    "inspect": "npx @modelcontextprotocol/inspector node src/stdio.js",
+    "dev": "node dev/entorno.js",
+    "test": "node dev/entorno.js test"
   },
   "keywords": [
     "mcp",
